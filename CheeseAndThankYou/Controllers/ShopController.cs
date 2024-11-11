@@ -39,6 +39,7 @@ namespace CheeseAndThankYou.Controllers
 
         //POST : /Shop/AddToCart
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public IActionResult AddToCart(int quantity,int ProductId)
         {
             //Look up the product price
