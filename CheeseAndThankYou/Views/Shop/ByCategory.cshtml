@@ -18,10 +18,26 @@
         <article class="col-lg-4 mb-3">
             <div class="card mb-4 h-100">
                 <div class="card-body">
-                    <h4>@product.Name</h4>
-                    <p>@product.Description</p>
+                    <a asp-controller="Products" asp-action="Details" asp-route-id="@product.ProductId">
+                        <h4>@product.Name</h4>
+                    </a>
+                    @if(product.Photo != null){
+                        <img src="~/img/products/@product.Photo" alt="@product.Name" class="thumb"/>
+                    }
+                    else
+                    {
+                        <img src="~/img/placeholder.gif" alt="@product.Name" class="thumb"/>
+                    }
                     <p>@String.Format("{0:c}", product.Price)</p>
                     <p>@product.Size</p>
+                    <form method="post" action="/Shop/AddToCart">
+                        <input name="Quantity" type="number" min="1" placeholder="Qty" class="input_small" required />
+                        <input name="ProductId" type="hidden" value="@product.ProductId"/>
+                        <button class="btn btn-primary">
+                            Add to Cart
+                        </button>
+
+                    </form>
                     <a class="btn btn-primary">
                         Add to Cart
                     </a>
