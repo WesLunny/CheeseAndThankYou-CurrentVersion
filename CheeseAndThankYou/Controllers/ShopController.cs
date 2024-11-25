@@ -1,6 +1,8 @@
 ﻿using CheeseAndThankYou.Data;
 using CheeseAndThankYou.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace CheeseAndThankYou.Controllers
 {
@@ -37,19 +39,130 @@ namespace CheeseAndThankYou.Controllers
             return View(products);
         }
 
-        //POST : /Shop/AddToCart
+        // POST: /Shop/AddToCart
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult AddToCart(int quantity,int ProductId)
+        public IActionResult AddToCart(int Quantity, int ProductId)
         {
-            //Look up the product price
-            //create a unique cart identifier / fetch current cart identifier
-            //create and save a new cart item
-            //take user to cart contents page
+            // look up product price
+            var product = _context.Products.Find(ProductId);
 
+            if (product == null)
+            {
+                return RedirectToAction("Error");
+            }
+
+            var price = product.Price;
+
+            // create a unique cart identifier / fetch current cart identifier
+            var customerId = GetCustomerId();
+
+            // does this product already exist in this customer's cart?
+            var cartItem = _context.CartItems.SingleOrDefault(c => c.CustomerId == customerId && c.ProductId == ProductId);
+
+            if (cartItem != null)
+            {
+                // update quantity
+                cartItem.Quantity += Quantity;
+                _context.CartItems.Update(cartItem);
+            }
+            else
+            {
+                // create and save new cart item
+                cartItem = new CartItem
+                {
+                    Quantity = Quantity,
+                    ProductId = ProductId,
+                    Price = price,
+                    CustomerId = customerId
+                };
+                _context.CartItems.Add(cartItem);
+            }
+               
+            _context.SaveChanges();
+
+            // redirect to cart page
             return RedirectToAction("Cart");
-
         }
+
+        private string GetCustomerId()
+        {
+            // check session var for a CustomerId
+            if (HttpContext.Session.GetString("CustomerId") == null)
+            {
+                // use GUID to create new CustomerId session var 
+                HttpContext.Session.SetString("CustomerId", Guid.NewGuid().ToString());
+            }
+           
+            return HttpContext.Session.GetString("CustomerId");
+        }
+
+        // GET: //Shop/Cart
+        public IActionResult Cart()
+        {
+            // get current user's cart items including parent ref to show product details
+            var cartItems = _context.CartItems
+                .Include(c => c.Product)
+                .Where(c => c.CustomerId == GetCustomerId());
+
+            // calc total # of items in cart => store in session var for navbar badge
+            var itemCount = (from c in cartItems
+                             select c.Quantity).Sum();
+            HttpContext.Session.SetInt32("ItemCount", itemCount);
+
+            // return view
+            return View(cartItems);
+        }
+
+        // GET: //Shop/RemoveFromCart/5
+        public IActionResult RemoveFromCart(int id)
+        {
+            // find selected cart item
+            var cartItem = _context.CartItems.Find(id);
+
+            if (cartItem == null)
+            {
+                return RedirectToAction("Error");
+            }
+
+            // remove it
+            _context.CartItems.Remove(cartItem);
+            _context.SaveChanges();
+
+            // refresh cart
+            return RedirectToAction("Cart");
+        }
+
+        // POST: //Shop/UpdateQuantity
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult UpdateQuantity(int Quantity, int CartItemId)
+        {
+            // find selected cart item
+            var cartItem = _context.CartItems.Find(CartItemId);
+
+            if (cartItem == null)
+            {
+                return RedirectToAction("Error");
+            }
+
+            // update quantity
+            cartItem.Quantity = Quantity;
+            _context.CartItems.Update(cartItem);
+            _context.SaveChanges();
+
+            // refresh cart
+            return RedirectToAction("Cart");
+        }
+
+        // GET: //Shop/Checkout
+        [Authorize]
+        public IActionResult Checkout()
+        {
+            return View();
+        }
+
+        //POST://shop/checkout
 
     }
 }

@@ -15,8 +15,8 @@ builder.Services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.Requ
     .AddEntityFrameworkStores<ApplicationDbContext>();
 builder.Services.AddControllersWithViews();
 
-//enable google auth
-//let our app red from appsettings or Azure Env Vars
+// enable Google auth
+// let our app read from appsettings or Azure Env Vars
 var configuration = builder.Configuration;
 
 builder.Services.AddAuthentication()
@@ -25,6 +25,9 @@ builder.Services.AddAuthentication()
         options.ClientId = configuration["Authentication:Google:ClientID"];
         options.ClientSecret = configuration["Authentication:Google:ClientSecret"];
     });
+
+// enable sessions
+builder.Services.AddSession();
 
 var app = builder.Build();
 
@@ -51,5 +54,8 @@ app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
 app.MapRazorPages();
+
+// session support
+app.UseSession();
 
 app.Run();

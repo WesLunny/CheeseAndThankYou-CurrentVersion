@@ -66,3 +66,11 @@ a {
     .thumb {
         width: 85px;
     }
+
+    .inputSmall {
+        width: 90px;
+    }
+
+    .badge-secondary {
+        background-color: dimgray;
+    }
